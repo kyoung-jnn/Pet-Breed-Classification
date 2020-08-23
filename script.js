@@ -1,3 +1,5 @@
+var modelData; // json 파일 저장용 
+
 function readURL(input) {
   if (input.files && input.files[0]) {
     var reader = new FileReader();
@@ -76,14 +78,34 @@ async function predict() {
   // predict can take in an image, video or canvas html element
   var image = document.getElementById("pet-image");
   var prediction = await model.predict(image, false);
-  console.log(prediction);
   findTopPrediction(prediction);
 }
 
-const modelData = {
-  Beagle:
-    "비글은 개 품종의 하나이다. 외모는 억세어 보이며, 몸에 군더더기 살이 없고, 짧은 털이 빽빽하게 나 있다. 머리는 넓적하고, 귀는 부드러우며 길쭉하다. 체중은 약 8~14kg이다.",
-};
+// json 파일 읽어오기
+function readJsonFile(file, callback) {
+  var rawFile = new XMLHttpRequest();
+  rawFile.overrideMimeType("application/json");
+  rawFile.open("GET", file, true);
+  rawFile.onreadystatechange = function () {
+    if (rawFile.readyState === 4 && rawFile.status == "200") {
+      callback(rawFile.responseText);
+    }
+  };
+  rawFile.send(null);
+}
+
+readJsonFile("./modelData.json", function (text) {
+  modelData = JSON.parse(text); // json 파일 배열형식으로 저장
+  console.log(modelData);
+});
+
+function findPetInJson(predictPet, modelData) {
+  for (let i = 0; i < modelData.length; i++) {
+     if(modelData[i].name.includes(predictPet) === true){
+       return modelData[i].text;
+     }
+  }
+}
 
 function findTopPrediction(predictionObj) {
   let topProbability = predictionObj[0].probability.toFixed(2);
@@ -103,7 +125,7 @@ function findTopPrediction(predictionObj) {
     <p style="font-weight:bold; font-size: x-large">
     사진의 애완동물은 ${predictPet} 입니다!
     </p> 
-    <p>${modelData[predictPet]}</p>`;
+    <p>${findPetInJson(predictPet,modelData)}</p>`;
 
   labelContainer.childNodes[0].innerHTML = classPrediction;
 }
